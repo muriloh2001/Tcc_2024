@@ -68,8 +68,9 @@ const Nav = ({
           </div>
 
           <Link to="/onBoardingEmpresa" className="primary-button-edit-profile">
-            Editar Perfil
-          </Link>
+          Editar Perfil
+        </Link>
+
         </>
       )}
 

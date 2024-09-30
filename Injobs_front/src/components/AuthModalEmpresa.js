@@ -11,27 +11,40 @@ const AuthModalEmpresa = ({ onClose, isSignUp, setErrorMessage }) => {
     const [telefone_empresa, setTelefoneEmpresa] = useState('');
     const [about_empresa, setAboutEmpresa] = useState('');
     const [error, setError] = useState('');
-    const navigate = useNavigate(); // Hook para navegação
+    const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
+
+    const validateCNPJ = (cnpj) => {
+        // Implementar a lógica de validação do CNPJ aqui
+        return true; // Retornar true se válido, false se inválido
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         setErrorMessage('');
+        setLoading(true);
     
+        if (!validateCNPJ(cnpj)) {
+            setError('CNPJ inválido');
+            setLoading(false);
+            return;
+        }
+
         if (isSignUp && password !== confirmPassword) {
             setError('As senhas não coincidem');
+            setLoading(false);
             return;
         }
     
-        // Ajuste os dados a serem enviados
         const data = isSignUp
             ? { 
-                cnpj: cnpj, 
-                password: password, 
-                nome_empresa: nome_empresa, 
-                endereco_empresa: endereco_empresa, 
-                telefone_empresa: telefone_empresa, 
-                about_empresa: about_empresa 
+                cnpj, 
+                password, 
+                nome_empresa, 
+                endereco_empresa, 
+                telefone_empresa, 
+                about_empresa 
               }
             : { cnpj, password };
     
@@ -43,6 +56,7 @@ const AuthModalEmpresa = ({ onClose, isSignUp, setErrorMessage }) => {
                 navigate('/onboardingEmpresa');
             } else {
                 localStorage.setItem('token', response.data.token);
+                localStorage.setItem('empresaId', response.data.empresaId); // Armazenando empresaId
                 navigate('/onboardingEmpresa');
             }
             onClose();
@@ -50,13 +64,11 @@ const AuthModalEmpresa = ({ onClose, isSignUp, setErrorMessage }) => {
             console.error("Erro na requisição:", err);
             setError(err.response?.data || 'Erro na requisição');
             setErrorMessage(err.response?.data || 'Erro ao realizar a ação');
+        } finally {
+            setLoading(false); // Finaliza o loading
         }
     };
     
-    
-    
-    
-
     return (
         <div className="modal">
             <div className="modal-content">
@@ -132,7 +144,9 @@ const AuthModalEmpresa = ({ onClose, isSignUp, setErrorMessage }) => {
                             />
                         </div>
                     )}
-                    <button type="submit">{isSignUp ? 'Cadastrar' : 'Entrar'}</button>
+                    <button type="submit" disabled={loading}>
+                        {loading ? 'Carregando...' : (isSignUp ? 'Cadastrar' : 'Entrar')}
+                    </button>
                 </form>
             </div>
         </div>

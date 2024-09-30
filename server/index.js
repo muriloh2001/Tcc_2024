@@ -54,6 +54,19 @@ db.serialize(() => {
         FOREIGN KEY (from_userid) REFERENCES users(user_id) ON DELETE CASCADE,
         FOREIGN KEY (to_userid) REFERENCES users(user_id) ON DELETE CASCADE
     )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS jobs (
+        job_id TEXT PRIMARY KEY,
+        empresa_id TEXT NOT NULL,
+        titulo TEXT NOT NULL,
+        descricao TEXT NOT NULL,
+        requisitos TEXT,
+        salario TEXT,
+        FOREIGN KEY (empresa_id) REFERENCES empresas(empresa_id)
+    )`);
+    
+ 
+    
 });
 
 // Middleware para verificar o token JWT
@@ -193,10 +206,16 @@ app.post('/login-empresa', async (req, res) => {
             return res.status(401).send('Senha inválida');
         }
 
+        // Verifica se o cadastro da empresa está completo
+        const cadastroCompleto = empresa.nome_empresa && empresa.endereco_empresa && empresa.telefone_empresa && empresa.about_empresa;
+
         const token = jwt.sign({ empresaId: empresa.empresa_id }, JWT_SECRET, { expiresIn: '1d' });
-        res.status(200).json({ token, empresaId: empresa.empresa_id });
+
+        // Retorna o token e o estado do cadastro
+        res.status(200).json({ token, empresaId: empresa.empresa_id, cadastroCompleto });
     });
 });
+
 
 // Obter dados de um usuário autenticado
 app.get('/user', verifyToken, (req, res) => {
@@ -310,6 +329,45 @@ app.get('/empresas', verifyToken, (req, res) => {
         res.json(rows);
     });
 });
+
+// Atualizar dados da empresa
+app.put('/update-empresa', verifyToken, (req, res) => {
+    const empresaId = req.user.empresaId; // Verifique se está recuperando o ID corretamente do token
+    const { endereco_empresa, telefone_empresa, about_empresa } = req.body;
+
+    db.run(`UPDATE empresas SET endereco_empresa = ?, telefone_empresa = ?, about_empresa = ? WHERE empresa_id = ?`,
+        [endereco_empresa, telefone_empresa, about_empresa, empresaId],
+        function (err) {
+            if (err) {
+                return res.status(400).json({ error: 'Erro ao atualizar empresa: ' + err.message });
+            }
+            if (this.changes === 0) {
+                return res.status(404).json({ error: 'Empresa não encontrada.' });
+            }
+            res.status(200).json({ message: 'Empresa atualizada com sucesso.' });
+        }
+    );
+});
+
+
+
+
+// Rota para listar todas as vagas de emprego
+app.get('/jobs', verifyToken, (req, res) => {
+    const query = `
+        SELECT jobs.job_id, jobs.titulo, jobs.descricao, jobs.requisitos, jobs.salario, empresas.nome_empresa 
+        FROM jobs 
+        JOIN empresas ON jobs.empresa_id = empresas.empresa_id
+    `;
+
+    db.all(query, [], (err, rows) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        res.json(rows);
+    });
+});
+
 
 // Iniciar o servidor
 app.listen(PORT, () => console.log('Servidor rodando na porta ' + PORT));

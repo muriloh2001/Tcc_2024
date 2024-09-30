@@ -91,7 +91,7 @@ const CandidatoInfo = () => {
                 const updatedUser = await response.json();
                 setUser(updatedUser);
                 setIsEditing(false);
-                navigate('/dashboard'); // Redireciona para a página de Dashboard
+                navigate('/dashboard-candidato'); // Redireciona para a página de Dashboard
             } else {
                 const errorData = await response.json();
                 setError(errorData.error || 'Erro ao atualizar dados');
